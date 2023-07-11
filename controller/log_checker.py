@@ -21,9 +21,9 @@ class LogChecker:
                 lines = file.readlines()
                 data = {}
                 for line in lines:
-                    key, value = line.strip().split(":")
+                    key, value = line.strip().split(':')
                     data[key] = value
-                res[file_name.split(".")[0]] = data
+                res[file_name.split('.')[0]] = data
         return res
 
     def get_log_files_names(self, extension=False):
@@ -39,4 +39,4 @@ class LogChecker:
             try:
                 os.remove(file_path)
             except OSError as e:
-                create_log(f"Error removing file {file_path}: {e}")
+                create_log(f'Error removing file {file_path}: {e}')

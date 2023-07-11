@@ -60,7 +60,7 @@ class Mysql:
     def get_columns_names(self, table):
         '''return list columns names exampe:['id','date'...]'''
         try:
-            columns =  self.query_all(f"SHOW COLUMNS FROM {table}")
+            columns =  self.query_all(f'SHOW COLUMNS FROM {table}')
             columns = [column[0] for column in columns]
             return columns
         except:

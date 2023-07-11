@@ -4,13 +4,11 @@ import paramiko
 class Ssh:
 
     def __init__(self, ssh_set):
-        print(123)
         self.ssh_set = ssh_set
         self.sftp = None
         self.client = paramiko.SSHClient()
         self.client.load_system_host_keys()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        print(456)
 
     def connect(self, test=False) -> bool:
         '''ssh connect return true or false'''
