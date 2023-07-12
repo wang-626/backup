@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 from repository import Mysql, Ssh
-from controller import BackupManager, LogChecker, create_log
+from controller import BackupManager, SyncManager, LogChecker, create_log
 
 
 load_dotenv()
@@ -47,19 +47,19 @@ def sync():
 
         if DB1.connect(test=True) and DB2.connect(test=True):
             checker = LogChecker(LOG_INSERT_PATH)
-            backup = BackupManager(DB1, DB2)
+            sync = SyncManager(DB1, DB2)
 
             if checker.check_log_files():
                 files = checker.get_log_files()
-                backup.insert_date_to_db2(files)
+                sync.insert_date_to_db2(files)
                 checker.remove_logs()
 
             checker = LogChecker(LOG_UPDATE_PATH)
-            backup = BackupManager(DB1, DB2)
+            sync = SyncManager(DB1, DB2)
 
             if checker.check_log_files():
                 files = checker.get_log_files()
-                backup.update_date_to_db2(files)
+                sync.update_date_to_db2(files)
                 checker.remove_logs()
 
     except Exception as err:

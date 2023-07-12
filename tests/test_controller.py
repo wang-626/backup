@@ -4,7 +4,7 @@ import datetime
 import os
 from repository import Mysql, Ssh
 from pathlib import Path
-from controller import BackupManager, LogChecker, create_log
+from controller import BackupManager, SyncManager, LogChecker, create_log
 
 db_set = {
     'host': 'localhost',
@@ -62,14 +62,15 @@ class TestConnectionChecker(unittest.TestCase):
         self.assertEqual(res, False)
 
 
-class TestBackupManager(unittest.TestCase):
-    '''Test BackupManager function'''
+class TestSyncManager(unittest.TestCase):
+    '''Test SyncManager function'''
 
     def test_insert_date_to_db2(self):
         '''Test log update to db table network_disconnection_logs'''
         checker = LogChecker(PATH)
-        backup = BackupManager(DB1, DB2)
-        ids = [1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010]
+        sync = SyncManager(DB1, DB2)
+        ids = [1000, 1001, 1002, 1003, 1004,
+               1005, 1006, 1007, 1008, 1009, 1010]
         DB1.connect()
         DB2.connect()
         for id in ids:
@@ -79,16 +80,20 @@ class TestBackupManager(unittest.TestCase):
             if DB2.query_one(f'SELECT * FROM cremation_relation WHERE id = {id}'):
                 DB2.sql(f'DELETE FROM cremation_relation WHERE id = {id}')
                 DB2.commit_changes()
-            DB1.sql(f'INSERT INTO cremation_relation VALUES({id}, "test", "test", 0, "2023-07-03", "2023-07-03")') # 建立新資料測試
+            # 建立新資料測試
+            DB1.sql(
+                f'INSERT INTO cremation_relation VALUES({id}, "test", "test", 0, "2023-07-03", "2023-07-03")')
             DB1.commit_changes()
         DB1.disconnect()
         DB2.disconnect()
-        backup.insert_date_to_db2(checker.get_log_files())
+        sync.insert_date_to_db2(checker.get_log_files())
         DB1.connect()
         DB2.connect()
         for id in ids:
-            res1 = DB1.query_one(f'SELECT * FROM cremation_relation WHERE id = {id}') 
-            res2 = DB2.query_one(f'SELECT * FROM cremation_relation WHERE id = {id}')
+            res1 = DB1.query_one(
+                f'SELECT * FROM cremation_relation WHERE id = {id}')
+            res2 = DB2.query_one(
+                f'SELECT * FROM cremation_relation WHERE id = {id}')
             self.assertEqual(res1, res2)
         DB1.disconnect()
         DB2.disconnect()
@@ -96,25 +101,30 @@ class TestBackupManager(unittest.TestCase):
     def test_update_date_to_db2(self):
         '''Test log update to db table network_disconnection_logs'''
         checker = LogChecker(PATH)
-        backup = BackupManager(DB1, DB2)
+        sync = SyncManager(DB1, DB2)
         dates = {
-            '20230703':{
-                'cremation_relation':'1'
-                }
+            '20230703': {
+                'cremation_relation': '1'
             }
+        }
         DB1.connect()
         DB2.connect()
-        DB1.sql(f'UPDATE cremation_relation SET title="aaaaa", updated_at = "{datetime.date(2023, 7, 3)}" WHERE id = 1') # 建立不同資料測試
-        DB2.sql(f'UPDATE cremation_relation SET title="xxxxx", updated_at = "{datetime.date(2023, 7, 3)}" WHERE id = 1')
+        # 建立不同資料測試
+        DB1.sql(
+            f'UPDATE cremation_relation SET title="aaaaa", updated_at = "{datetime.date(2023, 7, 3)}" WHERE id = 1')
+        DB2.sql(
+            f'UPDATE cremation_relation SET title="xxxxx", updated_at = "{datetime.date(2023, 7, 3)}" WHERE id = 1')
         DB1.commit_changes()
         DB2.commit_changes()
         DB1.disconnect()
         DB2.disconnect()
-        backup.update_date_to_db2(dates)
+        sync.update_date_to_db2(dates)
         DB1.connect()
         DB2.connect()
-        res1 = DB1.query_one('SELECT title FROM cremation_relation WHERE id = 1') 
-        res2 = DB2.query_one('SELECT title FROM cremation_relation WHERE id = 1')
+        res1 = DB1.query_one(
+            'SELECT title FROM cremation_relation WHERE id = 1')
+        res2 = DB2.query_one(
+            'SELECT title FROM cremation_relation WHERE id = 1')
         DB1.disconnect()
         DB2.disconnect()
         self.assertEqual(res1, res2)
@@ -122,25 +132,30 @@ class TestBackupManager(unittest.TestCase):
     def test_update_date_to_db22(self):
         '''Test 測試當備份資料比現有資料舊時'''
         checker = LogChecker(PATH)
-        backup = BackupManager(DB1, DB2)
+        sync = SyncManager(DB1, DB2)
         dates = {
-            '20230703':{
-                'cremation_relation':'2'
-                }
+            '20230703': {
+                'cremation_relation': '2'
             }
+        }
         DB1.connect()
         DB2.connect()
-        DB1.sql(f'UPDATE cremation_relation SET title="aaaaa", updated_at = "{datetime.datetime(2023, 7, 3, 0, 0)}" WHERE id = 2') # 建立不同資料測試
-        DB2.sql(f'UPDATE cremation_relation SET title="xxxxx", updated_at = "{datetime.datetime(2023, 7, 5, 0, 0)}" WHERE id = 2')
+        # 建立不同資料測試
+        DB1.sql(
+            f'UPDATE cremation_relation SET title="aaaaa", updated_at = "{datetime.datetime(2023, 7, 3, 0, 0)}" WHERE id = 2')
+        DB2.sql(
+            f'UPDATE cremation_relation SET title="xxxxx", updated_at = "{datetime.datetime(2023, 7, 5, 0, 0)}" WHERE id = 2')
         DB1.commit_changes()
         DB2.commit_changes()
         DB1.disconnect()
         DB2.disconnect()
-        backup.update_date_to_db2(dates)
+        sync.update_date_to_db2(dates)
         DB1.connect()
         DB2.connect()
-        res1 = DB1.query_one('SELECT updated_at FROM cremation_relation WHERE id = 2') 
-        res2 = DB2.query_one('SELECT updated_at FROM cremation_relation WHERE id = 2')
+        res1 = DB1.query_one(
+            'SELECT updated_at FROM cremation_relation WHERE id = 2')
+        res2 = DB2.query_one(
+            'SELECT updated_at FROM cremation_relation WHERE id = 2')
         DB1.disconnect()
         DB2.disconnect()
         self.assertEqual(res1[0], datetime.datetime(2023, 7, 3, 0, 0))
@@ -149,20 +164,26 @@ class TestBackupManager(unittest.TestCase):
     def test_insert_log_to_db2(self):
         '''Test log update to db table network_disconnection_logs'''
         checker = LogChecker(PATH)
-        backup = BackupManager(DB1, DB2)
+        sync = SyncManager(DB1, DB2)
         checker.get_log_files_names()
         DB2.connect()
-        backup.insert_log_to_db2('2023-07-03')
-        res = DB2.query_one('SELECT * FROM network_disconnection_logs ORDER bY id DESC')
+        sync.insert_log_to_db2('2055-05-05')
+        res = DB2.query_one(
+            'SELECT * FROM network_disconnection_logs ORDER bY id DESC')
         DB2.disconnect()
-        self.assertEqual(res[1], datetime.date(2023, 7, 3))
+        self.assertEqual(res[1], datetime.date(2055, 5, 5))
+
+
+class TestBackupManager(unittest.TestCase):
+    '''Test BackupManager function'''
 
     def test_check_backup_logs_list(self):
         '''Test check if the backup list has a value '''
         backup = BackupManager(DB1, DB2)
         res1 = backup.check_backup_logs_list()
         DB1.connect()
-        res2 = DB1.query_one('SELECT date FROM network_disconnection_logs WHERE status = 0')
+        res2 = DB1.query_one(
+            'SELECT date FROM network_disconnection_logs WHERE status = 0')
         DB1.disconnect()
         if res2:
             self.assertEqual(res1, True)
@@ -176,16 +197,16 @@ class TestBackupManager(unittest.TestCase):
         backup.backup('2023-07-07')
         file_list = os.listdir(PATH)
         self.assertTrue('2023-07-07.sql' in file_list)
-    
+
     def test_get_backup_logs_list(self):
         backup = BackupManager(DB1, DB2)
         date = '1777-07-07'
         DB1.connect()
         if not DB1.query_one(f'SELECT * FROM network_disconnection_logs WHERE id = 999'):
             values = {
-                'id':999,
-                'date':date,
-                'status':0
+                'id': 999,
+                'date': date,
+                'status': 0
             }
             DB1.insert_data('network_disconnection_logs', values)
             DB1.commit_changes()
@@ -198,20 +219,22 @@ class TestBackupManager(unittest.TestCase):
 
     def test_backup_by_log(self):
         backup = BackupManager(DB1, DB2, SSH)
-        ids =[777,778,779,780,781]
-        dates = ['2000-01-01','1999-01-01','1998-01-01','1997-01-01','1996-01-01']
+        ids = [777, 778, 779, 780, 781]
+        dates = ['2000-01-01', '1999-01-01',
+                 '1998-01-01', '1997-01-01', '1996-01-01']
         DB1.connect()
         for i, date in enumerate(dates):
             if not DB1.query_one(f'SELECT * FROM network_disconnection_logs WHERE id = {ids[i]}'):
                 values = {
-                    'id':ids[i],
-                    'date':date,
-                    'status':0
+                    'id': ids[i],
+                    'date': date,
+                    'status': 0
                 }
                 DB1.insert_data('network_disconnection_logs', values)
                 DB1.commit_changes()
             else:
-                DB1.sql(f'UPDATE network_disconnection_logs SET status=0 WHERE id = {ids[i]}')
+                DB1.sql(
+                    f'UPDATE network_disconnection_logs SET status=0 WHERE id = {ids[i]}')
                 DB1.commit_changes()
         DB1.disconnect()
         backup.backup_by_log()
@@ -229,7 +252,7 @@ class TestCreateLog(unittest.TestCase):
         BASE_DIR = Path(__file__).resolve().parent.parent
         PATH = os.path.join(BASE_DIR, 'logs')
         file_list = os.listdir(PATH)
-        self.assertTrue(len(file_list)>0)
+        self.assertTrue(len(file_list) > 0)
 
 
 if __name__ == '__main__':
