@@ -27,7 +27,7 @@ class BackupManager:
         arg = '--skip-add-drop-table --no-create-db --no-create-info --insert-ignore '
         where = f'--where=\"DATE(created_at) <= \'{date}\' AND DATE(updated_at) <= \'{date}\'\" '
         db = 'nengren'
-        table = 'cremation_person cremation_fee cremation_firm cremation_relation cremation_customuser'
+        table = 'cremation_fee cremation_firm cremation_relation cremation_customuser cremation_receiptset cremation_receipt cremation_person'
         command = f'mysqldump {user} {password} {arg} {where} {db} {table} > {PATH}'
 
         result = subprocess.run(command, shell=True, check=True)
